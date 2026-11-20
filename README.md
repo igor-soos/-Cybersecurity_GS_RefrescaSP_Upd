@@ -1,8 +1,8 @@
 # Refresca SP — Cybersecurity | Global Solution 2026.2
 
-> \*\*CitizenTech: segurança dos dados do cidadão em alertas de calor extremo\*\*  
-> \*\*Componente:\*\* Motor de Parsing PII + Taint Analysis + Bloqueio preventivo + Dashboard Executivo  
-> \*\*Disciplina:\*\* Cybersecurity — FIAP
+> CitizenTech: segurança dos dados do cidadão em alertas de calor extremo 
+> Componente: Motor de Parsing PII + Taint Analysis + Bloqueio preventivo + Dashboard Executivo  
+> Disciplina: Cybersecurity
 
 ## Equipe
 
@@ -22,7 +22,7 @@ Igor Soos - RM 556010
 
 O **Refresca SP** é uma proposta de serviço que avisa cidadãos, especialmente pessoas idosas e trabalhadores de rua, sobre calor extremo e pontos de hidratação/sombra. Um cadastro opcional para SMS poderia lidar com CPF, telefone e, em extensões futuras, outros dados privados. Logs de depuração **não devem expor essas informações**.
 
-Esta entrega constrói um módulo isolado de auditoria capaz de reconhecer indícios de exposição de CPF, telefone, informações de saúde e senhas em logs fictícios; mapear fontes e destinos do dado no código; demonstrar o bloqueio de eventos inseguros antes da gravação; e apresentar remediações em linguagem acessível. A opção `--gemini` faz uma chamada à API Gemini após o bloqueio e mostra a explicação no dashboard. Configure `GEMINI\_API\_KEY` no ambiente e rode `python analisador.py --gemini` na pasta do analisador. O modelo pode ser escolhido com `GEMINI\_MODEL`. O prompt inclui somente contagens por categoria.
+Esta entrega constrói um módulo isolado de auditoria capaz de reconhecer indícios de exposição de CPF, telefone, informações de saúde e senhas em logs fictícios; mapear fontes e destinos do dado no código; demonstrar o bloqueio de eventos inseguros antes da gravação; e apresentar remediações em linguagem acessível. A opção `--gemini` faz uma chamada à API Gemini após o bloqueio e mostra a explicação no dashboard.
 
 ## 2\. Executar e apresentar
 
@@ -34,49 +34,27 @@ Baixe e extraia o repositório. Abra `refresca\_sp\_cybersecurity/saida/dashboar
 
 Apresente o README, o dashboard e as saídas já obtidas no Colab. O [roteiro atualizado](refresca_sp_cybersecurity/documentacao/roteiro_video.md) organiza uma gravação de aproximadamente 5 minutos. Não é necessário repetir chamadas à API durante o vídeo.
 
-### Execução pelo Google Colab
+### Execução pelo VSCODE
 
-Faça upload do ZIP neste formato e execute em células separadas:
+**Requisitos:** Python **3.10+**; nenhuma biblioteca externa.
 
-```python
-from google.colab import files
-from pathlib import Path
-import zipfile
+Abra no VS Code a pasta `refresca_sp_cybersecurity` e execute no terminal PowerShell:
 
-arquivos = files.upload()  # selecione somente o ZIP deste projeto
-nome = next(iter(arquivos))
-with zipfile.ZipFile(nome) as pacote:
-    pacote.extractall('/content/refresca\_entrega')
-projeto = Path('/content/refresca\_entrega/RefrescaSP\_Gemini/refresca\_sp\_cybersecurity')
-assert (projeto / 'analisador.py').is\_file(), 'Confira a estrutura do ZIP.'
-%cd {projeto}
-```
-
-```python
-!python analisador.py
-!python bloqueador.py
-!python -m unittest discover -s testes -v
-```
-
-Para baixar o painel gerado e abri-lo no navegador:
-
-```python
-files.download(str(projeto / 'saida/dashboard.html'))
-```
-
-O ZIP entregue não contém o notebook da execução original do aluno. Salve seu Colab com as saídas e, se incluí-lo na entrega, remova chaves de API das células e saídas.
-
-### Execução local alternativa
-
-Na pasta `refresca\_sp\_cybersecurity`, use qualquer terminal com Python:
-
-```bash
+```powershell
+python --version
 python analisador.py
 python bloqueador.py
 python -m unittest discover -s testes -v
+Start-Process msedge.exe -ArgumentList (Resolve-Path ".\saida\dashboard.html").Path
 ```
 
-A opção `--log dados/log\_simulado.txt --codigo dados/exemplo\_fluxo.py --saida saida` permite indicar entradas e destino. Use somente dados fictícios.
+Se o Windows não encontrar `python`, experimente `py`. O painel também abre com duplo clique em `saida/dashboard.html`.
+
+Você pode apontar o auditor para outros arquivos **fictícios**:
+
+```powershell
+python analisador.py --log dados/log_simulado.txt --codigo dados/exemplo_fluxo.py --saida saida
+```
 
 ## 3\. Estrutura
 
@@ -150,22 +128,66 @@ O índice soma pesos por ocorrências (**CPF 6, Telefone 3, Saúde 10, Senha 16*
 
 **Modo local (padrão):** `python analisador.py`. Os textos de remediação foram elaborados com apoio do ChatGPT e armazenados no programa. Não há chamada externa neste modo. O dashboard em `saida/dashboard.html` foi gerado no modo local e identifica a origem como **Explicação local**.
 
-**Extensão Gemini (opcional):** `python analisador.py --gemini --saida saida\_gemini`. O módulo `ia\_cidadao.py` solicita uma explicação simples sobre os bloqueios. Usa `GEMINI\_API\_KEY` no ambiente e permite selecionar o modelo por `GEMINI\_MODEL`. O código envia uma instrução e **contagens por categoria**, sem as mensagens dos logs. A API não decide quais mensagens bloquear: isso continua sendo feito pelo filtro local.
+**Extensão Gemini (opcional):** O módulo `ia\_cidadao.py` solicita uma explicação simples sobre os bloqueios. Usa `GEMINI_API_KEY` no ambiente. A API não decide quais mensagens bloquear: isso continua sendo feito apenas pelo filtro local.
 
-No Colab, caso queira testar a extensão, cadastre a chave nos Secrets com o nome `GEMINI\_API\_KEY`, conceda acesso ao notebook e use:
+No Colab, caso queira testar a extensão, cadastre a chave nos Secrets com o nome `GEMINI_API_KEY`, conceda acesso ao notebook e crie a primeira célula de código:
+
+```python
+from google.colab import files
+from io import BytesIO
+from pathlib import Path
+from tempfile import mkdtemp
+from zipfile import ZipFile
+import subprocess
+import sys
+
+enviados = files.upload()
+nome, conteudo = next(iter(enviados.items()))
+
+pasta = Path(mkdtemp(prefix="refresca_sp_"))
+with ZipFile(BytesIO(conteudo)) as zip_projeto:
+    zip_projeto.extractall(pasta)
+
+script = next(pasta.rglob("bloqueador.py"), None)
+if script is None:
+    raise FileNotFoundError("O ZIP precisa conter o arquivo bloqueador.py.")
+
+subprocess.run([sys.executable, script.name], cwd=script.parent, check=True)
+```
+
+Após usar esse código para abrir o zip do projeto, adicione essa outra célula.
 
 ```python
 import os
-from google.colab import userdata
-os.environ\['GEMINI\_API\_KEY'] = userdata.get('GEMINI\_API\_KEY')
-!python analisador.py --gemini --saida saida\_gemini
+import subprocess
+import sys
+from google.colab import files, userdata
+
+projeto = script.parent
+ambiente = os.environ.copy()
+ambiente["GEMINI_API_KEY"] = userdata.get("GEMINI_API_KEY")
+
+resultado = subprocess.run(
+    [sys.executable, "analisador.py", "--gemini"],
+    cwd=projeto,
+    env=ambiente,
+    capture_output=True,
+    text=True,
+)
+
+print(resultado.stdout)
+if resultado.stderr:
+    print(resultado.stderr)
+resultado.check_returncode()
+
+files.download(str(projeto / "saida" / "dashboard_RESULTADO.html"))
 ```
 
 A demonstração principal não depende dessa etapa. O modelo configurado e o acesso à API precisam estar disponíveis na conta utilizada.
 
-**Resultado observado:** a evidência `evidencias/dashboard\_ERRO\_503.html` mostra **IA indisponível** e a mensagem “Não foi possível obter uma explicação completa nesta execução”. O nome do arquivo menciona 503, mas o HTML não registra esse código nem o corpo da resposta. Portanto, ele comprova a ausência de uma explicação gerada naquela tentativa, sem permitir confirmar sua causa. Não há resposta bem-sucedida do Gemini comprovada neste pacote.
+**Resultado observado durante testes:** a evidência `evidencias/dashboard\_ERRO\_503.html` mostra **IA indisponível** e a mensagem “Não foi possível obter uma explicação completa nesta execução”. A mensagem retornada na execução Colab menciona erro 503. Devido ao problema na API, não há resposta bem-sucedida do Gemini comprovada neste pacote.
 
-Quando a extensão falha, o painel mantém os resultados da auditoria, os bloqueios e os cartões locais de remediação; o bloco final mostra a indisponibilidade. Isso não significa que houve geração bem-sucedida ou substituição automática por uma nova resposta de IA. Leia [uso de IA](refresca_sp_cybersecurity/documentacao/uso_ia.md).
+Quando a extensão falha, o painel mantém os resultados da auditoria, os bloqueios e os cartões locais de remediação; o bloco final mostra a indisponibilidade. Leia [uso de IA](refresca_sp_cybersecurity/documentacao/uso_ia.md).
 
 ## 9\. Resultados da amostra v2
 
@@ -184,8 +206,7 @@ O valor **CRÍTICO** descreve as falhas **inseridas propositalmente na amostra**
 
 ## 10\. Link do vídeo
 
-* Vídeo anterior: https://youtu.be/qOjxqeGSBXI?si=DIoal8sUutYWIOiH
-* **Vídeo atualizado:** inserir o link após gravar e publicar. O link anterior foi preservado, mas seu conteúdo não foi verificado nesta revisão.
+* **Youtube:** 
 
 ## 11\. Limitações e recomendações
 
