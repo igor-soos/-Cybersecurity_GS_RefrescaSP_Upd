@@ -205,7 +205,7 @@ O valor **CRÍTICO** descreve as falhas **inseridas propositalmente na amostra**
 
 ## 10\. Link do vídeo
 
-* **Youtube:** 
+* **Youtube:** https://youtu.be/XbCVEqjUwhE
 
 ## 11\. Limitações e recomendações
 
