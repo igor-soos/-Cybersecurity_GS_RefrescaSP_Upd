@@ -76,7 +76,6 @@ refresca\_sp\_cybersecurity/
 ├── evidencias/                   # Capturas V2 e transcrições reais do terminal
 ├── documentacao/
 │   ├── uso\_ia.md                 # Tradução de risco e remediação
-│   ├── roteiro\_video.md          # Demonstração para entregar
 │   └── notas\_revisao.md          # Mudanças e limites das evidências
 ```
 
